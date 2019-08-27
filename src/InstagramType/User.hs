@@ -46,7 +46,7 @@ instance FromJSON User where
     bio <- v .: "biography"
     profilePic <- v .: "profile_pic_url"
     verified <- v .: "is_verified"
-    private <- return False
+    let private = False
     mediaCount <- v .: "media_count"
     followerCount <- v .: "follower_count"
     followingCount <- v .: "following_count"

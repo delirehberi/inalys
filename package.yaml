@@ -25,6 +25,7 @@ dependencies:
 - bytestring
 - raw-strings-qq
 - text
+- network
 
 library:
   source-dirs: src

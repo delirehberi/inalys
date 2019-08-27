@@ -4,6 +4,7 @@
 module Main where
 
 import InstagramType.User
+import qualified InstagramService.Client as IS
 import Data.Aeson
 import Text.RawString.QQ
 
@@ -78,6 +79,8 @@ main = do
   "show_post_insights_entry_point":false,
   "show_post_insights_settings_entry_point":false}
     |]
-    d = eitherDecode j :: Either String (Maybe User)
+  let params = IS.UserRequest {IS.username=Nothing,IS.userid="465107078"}
+  req <- IS.request "/user" params
+  let d = eitherDecode req :: Either String (Maybe User)
 
   putStrLn $ show d
