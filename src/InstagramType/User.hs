@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-} 
 module InstagramType.User where
 import Data.Aeson
 import Data.Text (Text)
@@ -38,7 +39,7 @@ data User = User {
   } deriving (Show)
 
 instance FromJSON User where
-  parseJSON (Object v) = do
+  parseJSON = withObject "User" $ \v -> do
     instagramId <- v .: "pk"
     username <- v .: "username"
     fullName <- v .: "full_name"
@@ -60,43 +61,11 @@ instance FromJSON User where
     bussinessContactMethod <- v .:? "bussiness_contact_method"
     cityId <- v .:? "city_id"
     cityName <- v .:? "city_name"
-    location_lat <- v .:? "latitude"
-    location_lon <- v .:? "longitude"
-    location <- return ((location_lat, location_lon))
+    location <- (,) <$> v.:? "latitude" <*> v.:? "longitude"
     publicEmail <- v .:? "public_email"
     publicPhoneCountryCode <- v .:? "public_phone_country_code"
     publicPhoneNumber <- v .:? "public_phone_number"
     zipCode <- v .:? "zip"
     instagramLocationId <- v .:? "instagram_location_id"
     hasHighlightReels <- v .: "has_highlight_reels"
-    return (User {
-      instagramId = instagramId,
-      username = username,
-      fullName = fullName,
-      bio = bio,
-      profilePic = profilePic,
-      verified = verified,
-      private = private,
-      mediaCount = mediaCount,
-      followerCount = followerCount,
-      followingCount = followingCount,
-      userTagsCount = userTagsCount,
-      bussiness = bussiness,
-      webSite = webSite,
-      hasChaining = hasChaining,
-      totalIGTvVideos = totalIGTvVideos,
-      totalAREffects = totalAREffects,
-      addressStreet = addressStreet,
-      instagramCategory = instagramCategory,
-      bussinessContactMethod = bussinessContactMethod,
-      cityId = cityId,
-      cityName = cityName,
-      location = location,
-      publicEmail = publicEmail,
-      publicPhoneNumber = publicPhoneNumber,
-      publicPhoneCountryCode = publicPhoneCountryCode,
-      zipCode = zipCode,
-      instagramLocationId = instagramLocationId,
-      hasHighlightReels = hasHighlightReels
-      })
-  parseJSON _ = empty
+    return (User {..})
