@@ -6,6 +6,8 @@ import GHC.Generics
 import Network.Socket hiding (recv)
 import Network.Socket.ByteString.Lazy (recv,sendAll)
 import Data.Aeson
+import qualified Data.ByteString as S
+import qualified Data.ByteString.Lazy as L
 
 data EmulatorRequestParameters = UserRequest {
     username :: Maybe String,
@@ -22,9 +24,9 @@ instance FromJSON EmulatorRequest
 instance ToJSON EmulatorRequestParameters
 instance FromJSON EmulatorRequestParameters
 
-{-request :: String -> EmulatorRequestParameters -> IO [Char]-}
+request :: String -> EmulatorRequestParameters -> IO L.ByteString
 request endpoint parameters = do 
-  let addr = SockAddrUnix "unix:///tmp/server_15420.sock" 
+  let addr = SockAddrUnix "/tmp/server_15420.sock" 
       fam = AF_UNIX
 
   sock <- socket fam Stream defaultProtocol
@@ -36,6 +38,13 @@ request endpoint parameters = do
     }
   let message = encode emulatorRequest
   sendAll sock message
-  msg <- recv sock 1024
+  {-ByteString-}
+  msg <- recvFull sock S.empty
+
   close sock
   return msg
+{-this function must be recursive-}
+recvFull :: Socket -> S.ByteString -> IO L.ByteString
+recvFull conn msg = do
+  msg' <- recv conn 1024
+  return msg'
