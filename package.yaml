@@ -26,6 +26,7 @@ dependencies:
 - raw-strings-qq
 - text
 - network
+- unordered-containers
 
 library:
   source-dirs: src

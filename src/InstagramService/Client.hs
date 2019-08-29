@@ -12,7 +12,12 @@ import qualified Data.ByteString.Lazy as L
 data EmulatorRequestParameters = UserRequest {
     username :: Maybe String,
     userid :: String
-  } deriving (Generic, Show)
+  }
+  |UserMediaRequest {
+    userid :: String,
+    next_max_id :: Maybe String
+    }
+  deriving (Generic, Show)
 
 data EmulatorRequest = EmulatorRequest {
   endpoint :: String,
@@ -46,7 +51,7 @@ request endpoint parameters = do
 {-this function must be recursive-}
 recvFull :: Socket -> IO [L.ByteString]
 recvFull conn = do
-  msg' <- recv conn 1024
+  msg' <- recv conn 2048
   if (L.null msg')
    then
     return []
