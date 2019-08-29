@@ -39,12 +39,17 @@ request endpoint parameters = do
   let message = encode emulatorRequest
   sendAll sock message
   {-ByteString-}
-  msg <- recvFull sock S.empty
+  msg <- (mconcat <$> recvFull sock)
 
   close sock
   return msg
 {-this function must be recursive-}
-recvFull :: Socket -> S.ByteString -> IO L.ByteString
-recvFull conn msg = do
+recvFull :: Socket -> IO [L.ByteString]
+recvFull conn = do
   msg' <- recv conn 1024
-  return msg'
+  if (L.null msg')
+   then
+    return []
+   else 
+    (msg' :) <$> recvFull conn 
+
