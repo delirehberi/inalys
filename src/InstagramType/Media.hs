@@ -2,7 +2,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE QuasiQuotes, ExtendedDefaultRules #-}
 module InstagramType.Media where
-import           Data.Aeson.Types    (Parser)
+import Data.Aeson.Types (Parser)
 import Data.Aeson
 import Control.Monad
 import Data.Text (Text)
@@ -42,11 +42,11 @@ data MediaList = MediaList {
 
 data Media = Media{
   instagramId :: String,
-  createdAt :: String,
-  user :: User,
+  createdAt :: Maybe String,
+  user :: Maybe User,
   image :: Maybe [File],
   video :: Maybe [File],
-  carousel :: Maybe [File],
+  carousel :: Maybe [Media],
   caption :: Maybe String,
   tags :: Maybe [String],
   filter :: Maybe Int,
@@ -84,8 +84,8 @@ instance FromJSON MediaType where
 instance FromJSON Media where
   parseJSON = withObject "Media" $ \v -> do
     instagramId <- v .: "pk"
-    createdAt <- v .: "taken_at"
-    user <- v .: "user"
+    createdAt <- v .:? "taken_at"
+    user <- v .:? "user"
     image <- fmap join $ v.:? "image_versions2"  >>= mapM (\x -> x .:? "candidates")
     caption <-fmap join $ v.:? "caption" >>= mapM (\x -> x .:? "text")
     tags <- v .:? "tags"
@@ -100,5 +100,5 @@ instance FromJSON Media where
     hasAudio <- v .:? "has_auido"
     viewCount <- v .:? "view_count"
     videoDuration <- v .:? "video_duration"
-    let carousel = Nothing
+    carousel <- v.:?"carousel_media"
     return (Media{..})
