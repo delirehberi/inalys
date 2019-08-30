@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE QuasiQuotes, ExtendedDefaultRules #-}
 module InstagramType.Media where
 import           Data.Aeson.Types    (Parser)
 import Data.Aeson
@@ -9,12 +10,21 @@ import Control.Applicative
 import InstagramType.Location
 import InstagramType.User
 import qualified Data.HashMap.Strict as HM
+import Text.InterpolatedString.Perl6
+
+
 data MediaType = Image|Video|Carousel deriving (Show)
 
-createMediaType:: Int -> MediaType
-createMediaType 1 = Image
-createMediaType 2 = Video
-createMediaType 8 = Carousel
+mediaTypes :: [(Int, MediaType)]
+mediaTypes =
+  [ (1, Image)
+  , (2, Video)
+  , (8, Carousel)
+  ]
+
+createMediaType:: Int -> Maybe MediaType
+createMediaType = flip lookup mediaTypes
+
 
 data File = File {
   url :: String,
@@ -22,12 +32,14 @@ data File = File {
   height :: Int
   }
   deriving (Show)
+
 data MediaList = MediaList {
     items :: Maybe [Media],
     count :: Maybe Int,
     more :: Bool,
     nextMaxId :: Maybe String
   } deriving (Show)
+
 data Media = Media{
   instagramId :: String,
   createdAt :: String,
@@ -48,6 +60,7 @@ data Media = Media{
   viewCount :: Maybe Int,
   videoDuration :: Maybe Float
   } deriving (Show)
+
 instance FromJSON MediaList where
   parseJSON = withObject "MediaList" $ \v -> do
     items <- v .:? "items"
@@ -55,27 +68,32 @@ instance FromJSON MediaList where
     more <- v .: "more_available"
     nextMaxId <- v .:? "next_max_id"
     return (MediaList{..})
+
 instance FromJSON File where
   parseJSON = withObject "File" $ \v -> do
     url <- v .: "url"
     width <- v .: "width"
     height <- v .: "height"
     return (File{..})
+
+instance FromJSON MediaType where
+  parseJSON v = parseJSON v >>= \typeInt -> case createMediaType typeInt of
+    Nothing -> fail [qc|Unknown media type: {typeInt}|]
+    Just mType -> return mType
+
 instance FromJSON Media where
   parseJSON = withObject "Media" $ \v -> do
     instagramId <- v .: "pk"
     createdAt <- v .: "taken_at"
     user <- v .: "user"
-    imageVersions <- v .: "image_versions2"
-    imagez <- imageVersions .: "candidates"
-    let image = return (imagez)
+    image <- fmap join $ v.:? "image_versions2"  >>= mapM (\x -> x .:? "candidates")
     caption <-fmap join $ v.:? "caption" >>= mapM (\x -> x .:? "text")
     tags <- v .:? "tags"
     filter <- v .:? "filter_type"
     likeCount <- v .:? "like_count"
     commentCount <- v .:? "comment_count"
     location <- v .:? "location"
-    _type <- createMediaType <$> v .: "media_type"
+    _type <- v .: "media_type"
     video <- v .:? "video_versions"
     code <- v .:? "code"
     deviceTimestamp <- v .:? "device_timestamp"

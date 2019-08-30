@@ -24,6 +24,7 @@ dependencies:
 - aeson
 - bytestring
 - raw-strings-qq
+- interpolatedstring-perl6
 - text
 - network
 - unordered-containers

@@ -12,12 +12,11 @@ import qualified Data.ByteString.Lazy as L
 data EmulatorRequestParameters = UserRequest {
     username :: Maybe String,
     userid :: String
-  }
-  |UserMediaRequest {
+  }|
+  UserMediaRequest {
     userid :: String,
     next_max_id :: Maybe String
-    }
-  deriving (Generic, Show)
+  }deriving (Generic, Show)
 
 data EmulatorRequest = EmulatorRequest {
   endpoint :: String,
@@ -43,12 +42,10 @@ request endpoint parameters = do
     }
   let message = encode emulatorRequest
   sendAll sock message
-  {-ByteString-}
   msg <- (mconcat <$> recvFull sock)
-
   close sock
   return msg
-{-this function must be recursive-}
+
 recvFull :: Socket -> IO [L.ByteString]
 recvFull conn = do
   msg' <- recv conn 2048

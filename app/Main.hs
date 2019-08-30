@@ -17,7 +17,6 @@ main = do
   
   let mediaparams = IS.UserMediaRequest {IS.userid="303054725",IS.next_max_id=(Just "")}
   req2 <- IS.request "/user/medias" mediaparams
-  
   let user = eitherDecode req :: Either String (Maybe User)
   let medias = eitherDecode req2 :: Either String (Maybe MediaList)
   putStrLn $ show user
