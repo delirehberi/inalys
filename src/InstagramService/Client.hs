@@ -42,14 +42,14 @@ request endpoint parameters = do
     }
   let message = encode emulatorRequest
   sendAll sock message
-  msg <- (mconcat <$> recvFull sock)
+  msg <- mconcat <$> recvFull sock
   close sock
   return msg
 
 recvFull :: Socket -> IO [L.ByteString]
 recvFull conn = do
   msg' <- recv conn 2048
-  if (L.null msg')
+  if L.null msg'
    then
     return []
    else 

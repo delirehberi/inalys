@@ -28,6 +28,7 @@ dependencies:
 - text
 - network
 - unordered-containers
+- either-unwrap >= 1.1
 
 library:
   source-dirs: src
