@@ -29,6 +29,12 @@ dependencies:
 - network
 - unordered-containers
 - either-unwrap >= 1.1
+- sort
+- extra
+- beam-core
+- beam-postgres
+- postgresql-simple
+- microlens
 
 library:
   source-dirs: src

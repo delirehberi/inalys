@@ -35,8 +35,6 @@ data File = File {
 
 data MediaList = MediaList {
     items :: Maybe [Media],
-    count :: Maybe Int,
-    more :: Bool,
     nextMaxId :: Maybe String
   } deriving (Show)
 
@@ -64,17 +62,15 @@ data Media = Media{
 instance FromJSON MediaList where
   parseJSON = withObject "MediaList" $ \v -> do
     items <- v .:? "items"
-    count <- v .:? "num_results"
-    more <- v .: "more_available"
     nextMaxId <- v .:? "next_max_id"
-    return (MediaList{..})
+    return MediaList{..}
 
 instance FromJSON File where
   parseJSON = withObject "File" $ \v -> do
     url <- v .: "url"
     width <- v .: "width"
     height <- v .: "height"
-    return (File{..})
+    return File{..}
 
 instance FromJSON MediaType where
   parseJSON v = parseJSON v >>= \typeInt -> case createMediaType typeInt of
@@ -86,8 +82,8 @@ instance FromJSON Media where
     instagramId <- v .: "pk"
     createdAt <- v .:? "taken_at"
     user <- v .:? "user"
-    image <- fmap join $ v.:? "image_versions2"  >>= mapM (\x -> x .:? "candidates")
-    caption <-fmap join $ v.:? "caption" >>= mapM (\x -> x .:? "text")
+    image <- fmap join $ v.:? "image_versions2"  >>= mapM (.:? "candidates")
+    caption <-fmap join $ v.:? "caption" >>= mapM (.:? "text")
     tags <- v .:? "tags"
     filter <- v .:? "filter_type"
     likeCount <- v .:? "like_count"

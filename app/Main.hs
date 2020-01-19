@@ -1,42 +1,87 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
-
 module Main where
-import Control.Monad (join)
-import InstagramType.User
-import InstagramType.Media
-import qualified InstagramService.Client as IS
+import Control.Arrow
+import Control.Monad (join,mfilter)
 import Data.Aeson
-import Text.RawString.QQ
 import qualified Data.ByteString.Lazy.Char8 as C8
-import Data.Maybe (isNothing)
-import Data.Either.Unwrap (fromRight)
+import Data.Either.Unwrap (fromLeft,fromRight)
+import qualified InstagramService.Client as IS
+import InstagramType.Media
+import InstagramType.User
+import Text.RawString.QQ
+import Data.Maybe (isNothing,fromMaybe)
+import Data.Sort (sortOn, sortBy)
+import Data.Ord (comparing)
+import Data.List (isPrefixOf,group,sort)
+import Data.List.Extra (groupOn)
+import Database.PostgreSQL.Simple
+import Model.User
+import Database
+import Database.Beam
+import Database.Beam.Postgres
+import Data.Text (Text)
+
 main :: IO ()
 main = do
-  let params = IS.UserRequest {IS.username=Nothing,IS.userid="303054725"}
-  req <- IS.request "/user" params
+  let userid = 1557623765;
+  -- user <- getUserFromDatabase userid
+  {-let params = IS.UserRequest {IS.username = Nothing, IS.userid = "303054725"}
+  req <- IS.request "/user" params-}
+
+  -- medias <- IS.repeatedRequestForMedia "1557623765" Nothing
   
-  let mediaparams = IS.UserMediaRequest {IS.userid="303054725",IS.next_max_id=Just ""}
-  medias <- mconcat <$> repeatedRequestForMedia "303054725" Nothing
+  -- let recent_medias = take 6 medias
+  -- let popular_medias = popularMedias medias 6
+  -- let most_liked_media = head popular_medias
+  -- let most_commented_medias = mostCommentedMedias medias 6
+  
+  -- let most_used_hashtags = take 20 $ hashtagPairedUsageCount medias
+  {-let user = eitherDecode req :: Either String (Maybe User)-}
 
-  let user = eitherDecode req :: Either String (Maybe User)
+  
+  -- print (length medias)
+  -- print most_used_hashtags
+  
+  -- c <- dbConnection
+  -- let u = Model.User.User
+  --          { _userId = 1557623765
+  --          , _username = "delirehberi"
+  --          , _fullname = "Emre YILMAZ"
+  --          , _biography = "emre"
+  --          , _profilePicture = "https://scontent-lhr3-1.cdninstagram.com/vp/3a80835a3990630ee13dc0e46672c9bf/5E07560E/t51.2885-19/s150x150/47584350_222534715206002_6818633037668941824_n.jpg?_nc_ht=scontent-lhr3-1.cdninstagram.com"
+  --          , _verified = False
+  --          , _mediaCount = 50
+  --          , _followerCount = 187
+  --          , _followingCount = 6
+  --          , _userTagsCount = 0
+  --          , _businessAccount = False
+  --          }
+  -- runBeamPostgres c $ runInsert $
+  --   insert (_inalysUsers inalysDatabase) $
+  --   insertValues [u]
+  u <- getUserFromDatabase dbConnection userid
+  print u
 
-  {-let medias = eitherDecode req2 :: Either String (Maybe MediaList)
 
-  putStrLn $ show medias-}
 
-  print user
-  print medias
+popularMedias :: [Media] -> Int -> [Media]
+popularMedias medias count = take count $ sortBy (flip (comparing (fromMaybe 0 . likeCount))) medias
 
-repeatedRequestForMedia :: String -> Maybe String -> IO [Maybe MediaList]
-repeatedRequestForMedia userid next_max_id = do
-    let endpoint = "/user/medias"
-    let mediaparams = IS.UserMediaRequest {IS.userid=userid,IS.next_max_id=next_max_id}
-    mediasResp <- IS.request endpoint mediaparams
-    let medias = fromRight ( eitherDecode mediasResp :: Either String (Maybe MediaList) )
+mostCommentedMedias :: [Media] -> Int -> [Media]
+mostCommentedMedias medias count = take count $ sortBy (flip (comparing (fromMaybe 0 . commentCount))) medias
 
-    if isNothing $ nextMaxId <$> medias 
-        then
-            return []
-        else
-            (medias:) <$> repeatedRequestForMedia endpoint (join (nextMaxId <$> medias))
+hashtagPairedUsageCount :: [Media] -> [(String,Int)]
+hashtagPairedUsageCount medias = sortBy (\(_,y) (_,x)-> x `compare` y) (groupCount (concatMap findTags medias) )
+  where
+    groupCount = map (fst.head &&& sum.map snd) . groupOn fst . sort
+
+findTags :: Media -> [(String,Int)]
+findTags media = 
+  let hashtags = case caption media of  
+                    Just c -> Prelude.filter (\x -> "#" `isPrefixOf` x) (words c)
+                    Nothing -> []
+  in
+    ( map (head &&& length) . group . sort ) hashtags
+
+dbConnection = connectPostgreSQL "host=localhost port=5432 dbname=inalysdb user=inalys password=123123"
